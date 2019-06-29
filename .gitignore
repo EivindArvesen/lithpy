@@ -1,0 +1,7 @@
+# Dependencies
+src/mpc.c
+src/mpc.h
+
+# Object-files, binaries, etc.
+*.o
+lithpy
