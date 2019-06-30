@@ -44,7 +44,7 @@ typedef struct lenv lenv;
 
 /* Lisp Value */
 
-enum { LVAL_ERR, LVAL_NUM,   LVAL_SYM, LVAL_STR,
+enum { LVAL_ERR, LVAL_NUM, LVAL_DEC, LVAL_SYM, LVAL_STR,
        LVAL_FUN, LVAL_SEXPR, LVAL_QEXPR };
 
 typedef lval*(*lbuiltin)(lenv*, lval*);
@@ -54,6 +54,7 @@ struct lval {
 
   /* Basic */
   long num;
+  double dec;
   char* err;
   char* sym;
   char* str;
@@ -74,6 +75,13 @@ lval* lval_num(long x) {
   v->type = LVAL_NUM;
   v->num = x;
   return v;
+}
+
+lval* lval_dec(double x) {
+    lval* v = malloc(sizeof(lval));
+    v->type = LVAL_DEC;
+    v->dec = x;
+    return v;
 }
 
 lval* lval_err(char* fmt, ...) {
@@ -144,7 +152,8 @@ void lenv_del(lenv* e);
 void lval_del(lval* v) {
 
   switch (v->type) {
-    case LVAL_NUM: break;
+    case LVAL_NUM:
+    case LVAL_DEC: break;
     case LVAL_FUN:
       if (!v->builtin) {
         lenv_del(v->env);
@@ -275,6 +284,7 @@ void lval_print(lval* v) {
       }
     break;
     case LVAL_NUM:   printf("%li", v->num); break;
+    case LVAL_DEC:   printf("%.2f", v->dec); break;
     case LVAL_ERR:   printf("Error: %s", v->err); break;
     case LVAL_SYM:   printf("%s", v->sym); break;
     case LVAL_STR:   lval_print_str(v); break;
@@ -493,10 +503,32 @@ lval* builtin_join(lenv* e, lval* a) {
   return x;
 }
 
+long min(long x, long y) {
+    if (x <= y) {
+        return x;
+    } else {
+        return y;
+    }
+}
+
+
+long max(long x, long y) {
+    if (x >= y) {
+        return x;
+    } else {
+        return y;
+    }
+}
+
 lval* builtin_op(lenv* e, lval* a, char* op) {
 
-  for (int i = 0; i < a->count; i++) {
-    LASSERT_TYPE(op, a, i, LVAL_NUM);
+  /* Ensure all arguments are numbers */
+  for (size_t i = 0; i < a->count; i++) {
+      // TODO: LASSERT_TYPE(op, a, i, LVAL_NUM) || LASSERT_TYPE(op, a, i, LVAL_DEC);
+      if (a->cell[i]->type != LVAL_NUM && a->cell[i]->type != LVAL_DEC) {
+          lval_del(a);
+          return lval_err("Cannot operate on non-number/non-decimal!");
+      }
   }
 
   lval* x = lval_pop(a, 0);
@@ -506,20 +538,46 @@ lval* builtin_op(lenv* e, lval* a, char* op) {
   while (a->count > 0) {
     lval* y = lval_pop(a, 0);
 
-    if (strcmp(op, "+") == 0) { x->num += y->num; }
-    if (strcmp(op, "-") == 0) { x->num -= y->num; }
-    if (strcmp(op, "*") == 0) { x->num *= y->num; }
-    if (strcmp(op, "/") == 0) {
-      if (y->num == 0) {
-        lval_del(x); lval_del(y);
-        x = lval_err("Division By Zero.");
-        break;
+    if (x->type == LVAL_NUM && y->type == LVAL_NUM) {
+      if (strcmp(op, "+") == 0) { x->num += y->num; }
+      if (strcmp(op, "-") == 0) { x->num -= y->num; }
+      if (strcmp(op, "*") == 0) { x->num *= y->num; }
+      if (strcmp(op, "/") == 0) {
+        if (y->num == 0) {
+          lval_del(x); lval_del(y);
+          x = lval_err("Division By Zero.");
+          break;
+        }
+        x->num /= y->num;
       }
-      x->num /= y->num;
-    }
-    if (strcmp(op, "%") == 0) { x->num %= y->num; }
-    if (strcmp(op, "^") == 0) {
-      x->num = (int) pow((double) x->num ,y->num);
+      if (strcmp(op, "%") == 0) { x->num %= y->num; }
+      if (strcmp(op, "^") == 0) {
+        x->num = (int) pow((double) x->num ,y->num);
+      }
+    } else {
+      /* Cast integer number into double if necessary */
+      double b = x->type == LVAL_NUM ? (double) x->num : x->dec;
+      double c = y->type == LVAL_NUM ? (double) y->num : y->dec;
+      /* Perform all operations on double */
+      if (strcmp(op, "+") == 0) {b += c;}
+      if (strcmp(op, "-") == 0) {b -= c;}
+      if (strcmp(op, "*") == 0) {b *= c;}
+      if (strcmp(op, "/") == 0) {
+          /* If second operand is zero return error */
+          if (c == 0) {
+              lval_del(x);
+              lval_del(y);
+              x = lval_err("Division by zero!");
+              break;
+          }
+          b /= c;
+      }
+      if (strcmp(op, "%") == 0) {b = fmod(b, c);}
+      if (strcmp(op, "^") == 0) {b = (pow(b, c));}
+      if (strcmp(op, "min") == 0) {b = fmin(b, c);}
+      if (strcmp(op, "max") == 0) {b = fmax(b, c);}
+      x->type = LVAL_DEC;
+      x->dec = b;
     }
 
     lval_del(y);
@@ -534,6 +592,8 @@ lval* builtin_sub(lenv* e, lval* a) { return builtin_op(e, a, "-"); }
 lval* builtin_mul(lenv* e, lval* a) { return builtin_op(e, a, "*"); }
 lval* builtin_div(lenv* e, lval* a) { return builtin_op(e, a, "/"); }
 
+lval* builtin_min(lenv* e, lval* a) { return builtin_op(e, a, "min"); }
+lval* builtin_max(lenv* e, lval* a) { return builtin_op(e, a, "max"); }
 lval* builtin_rem(lenv* e, lval* a) { return builtin_op(e, a, "%"); }
 lval* builtin_pow(lenv* e, lval* a) { return builtin_op(e, a, "^"); }
 
@@ -719,6 +779,8 @@ void lenv_add_builtins(lenv* e) {
   lenv_add_builtin(e, "div", builtin_div);
 
   /* Extra mathematical functions */
+  lenv_add_builtin(e, "min", builtin_min);
+  lenv_add_builtin(e, "max", builtin_max);
   lenv_add_builtin(e, "%", builtin_rem);
   lenv_add_builtin(e, "rem", builtin_rem);
   lenv_add_builtin(e, "^", builtin_pow);
@@ -851,8 +913,16 @@ lval* lval_eval(lenv* e, lval* v) {
 
 lval* lval_read_num(mpc_ast_t* t) {
   errno = 0;
-  long x = strtol(t->contents, NULL, 10);
-  return errno != ERANGE ? lval_num(x) : lval_err("Invalid Number.");
+  // Check if decimal
+  if (strstr(t->contents, ".")) {
+      double x = strtod(t->contents, NULL);
+      return errno != ERANGE ? lval_dec(x)
+                             : lval_err("Invalid number");
+  } else {
+      long x = strtol(t->contents, NULL, 10);
+      return errno != ERANGE ? lval_num(x)
+                             : lval_err("Invalid number");
+  }
 }
 
 lval* lval_read_str(mpc_ast_t* t) {
@@ -909,7 +979,7 @@ int main(int argc, char** argv) {
 
   mpca_lang(MPCA_LANG_DEFAULT,
     "                                                \
-      number  : /-?[0-9]+/ ;                         \
+      number  : /-?[0-9]+([.][0-9]*|[0-9]*)/ ;       \
       symbol  : /[a-zA-Z0-9_+\\-*\\/\\\\%^=<>!&]+/ ; \
       string  : /\"(\\\\.|[^\"])*\"/ ;               \
       comment : /;[^\\r\\n]*/ ;                      \
