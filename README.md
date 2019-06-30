@@ -2,7 +2,7 @@
 
 *Work in progress*
 
-A LISP dialect initially built following [Build Your Own LISP](http://www.buildyourownlisp.com).
+A Lisp implemented in C, following the book "[Build Your Own LISP](http://www.buildyourownlisp.com)".
 
 Depends on [mpc](https://github.com/orangeduck/mpc) for parser combinators.
 
