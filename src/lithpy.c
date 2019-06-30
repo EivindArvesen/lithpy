@@ -520,6 +520,17 @@ lval* builtin_cons(lenv* e, lval* a) {
   return list;
 }
 
+lval* builtin_len(lenv* e, lval *a) {
+  LASSERT_NUM("len", a, 1);
+  LASSERT_TYPE("len", a, 0, LVAL_QEXPR);
+
+  lval *q = lval_take(a, 0);
+  lval *c = lval_num(q->count);
+  lval_del(q);
+
+  return c;
+}
+
 long min(long x, long y) {
     if (x <= y) {
         return x;
