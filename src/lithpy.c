@@ -705,6 +705,12 @@ void lenv_add_builtins(lenv* e) {
   lenv_add_builtin(e, "*", builtin_mul);
   lenv_add_builtin(e, "/", builtin_div);
 
+  /* Mathematical Functions (Textual Operators) */
+  lenv_add_builtin(e, "add", builtin_add);
+  lenv_add_builtin(e, "sub", builtin_sub);
+  lenv_add_builtin(e, "mul", builtin_mul);
+  lenv_add_builtin(e, "div", builtin_div);
+
   /* Comparison Functions */
   lenv_add_builtin(e, "if", builtin_if);
   lenv_add_builtin(e, "==", builtin_eq);
