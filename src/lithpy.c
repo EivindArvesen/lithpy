@@ -520,15 +520,27 @@ lval* builtin_cons(lenv* e, lval* a) {
   return list;
 }
 
-lval* builtin_len(lenv* e, lval *a) {
+lval* builtin_len(lenv* e, lval* a) {
   LASSERT_NUM("len", a, 1);
   LASSERT_TYPE("len", a, 0, LVAL_QEXPR);
+  LASSERT_NOT_EMPTY("len", a, 0);
 
   lval *q = lval_take(a, 0);
   lval *c = lval_num(q->count);
   lval_del(q);
 
   return c;
+}
+
+lval* builtin_init(lenv* e, lval* a) {
+  LASSERT_NUM("len", a, 1);
+  LASSERT_TYPE("len", a, 0, LVAL_QEXPR);
+
+
+  lval *q = lval_take(a, 0);
+  lval_del(lval_pop(q, q->count - 1));
+
+  return q;
 }
 
 long min(long x, long y) {
@@ -793,7 +805,11 @@ void lenv_add_builtins(lenv* e) {
   lenv_add_builtin(e, "tail", builtin_tail);
   lenv_add_builtin(e, "eval", builtin_eval);
   lenv_add_builtin(e, "join", builtin_join);
+
+  /* Q-Expression Functions */
   lenv_add_builtin(e, "cons", builtin_cons);
+  lenv_add_builtin(e, "len", builtin_len);
+  lenv_add_builtin(e, "init", builtin_init);
 
   /* Mathematical Functions */
   lenv_add_builtin(e, "+", builtin_add);
