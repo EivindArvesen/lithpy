@@ -739,6 +739,16 @@ void lenv_add_builtins(lenv* e) {
   lenv_add_builtin(e, "print", builtin_print);
 }
 
+/* File loading */
+void lenv_load_file(lenv* e, char* filename) {
+  printf("Loading '%s'\n", filename);
+  lval* args = lval_add(lval_sexpr(), lval_str(filename));
+  lval* x = builtin_load(e, args);
+  if (x->type == LVAL_ERR) {
+    lval_println(x);
+  }
+}
+
 /* Evaluation */
 
 lval* lval_call(lenv* e, lval* f, lval* a) {
@@ -913,6 +923,9 @@ int main(int argc, char** argv) {
 
   lenv* e = lenv_new();
   lenv_add_builtins(e);
+
+  // Load standard library
+  lenv_load_file(e, "src/stdlib/prelude.lspy");
 
   /* Interactive Prompt */
   if (argc == 1) {
