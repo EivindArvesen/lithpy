@@ -518,6 +518,9 @@ lval* builtin_op(lenv* e, lval* a, char* op) {
       x->num /= y->num;
     }
     if (strcmp(op, "%") == 0) { x->num %= y->num; }
+    if (strcmp(op, "^") == 0) {
+      x->num = (int) pow((double) x->num ,y->num);
+    }
 
     lval_del(y);
   }
@@ -532,6 +535,7 @@ lval* builtin_mul(lenv* e, lval* a) { return builtin_op(e, a, "*"); }
 lval* builtin_div(lenv* e, lval* a) { return builtin_op(e, a, "/"); }
 
 lval* builtin_rem(lenv* e, lval* a) { return builtin_op(e, a, "%"); }
+lval* builtin_pow(lenv* e, lval* a) { return builtin_op(e, a, "^"); }
 
 lval* builtin_var(lenv* e, lval* a, char* func) {
   LASSERT_TYPE(func, a, 0, LVAL_QEXPR);
@@ -717,6 +721,8 @@ void lenv_add_builtins(lenv* e) {
   /* Extra mathematical functions */
   lenv_add_builtin(e, "%", builtin_rem);
   lenv_add_builtin(e, "rem", builtin_rem);
+  lenv_add_builtin(e, "^", builtin_pow);
+  lenv_add_builtin(e, "pow", builtin_pow);
 
   /* Comparison Functions */
   lenv_add_builtin(e, "if", builtin_if);
@@ -892,16 +898,16 @@ int main(int argc, char** argv) {
   Lispy   = mpc_new("lispy");
 
   mpca_lang(MPCA_LANG_DEFAULT,
-    "                                              \
-      number  : /-?[0-9]+/ ;                       \
-      symbol  : /[a-zA-Z0-9_+\\-*\\/\\\\%=<>!&]+/ ; \
-      string  : /\"(\\\\.|[^\"])*\"/ ;             \
-      comment : /;[^\\r\\n]*/ ;                    \
-      sexpr   : '(' <expr>* ')' ;                  \
-      qexpr   : '{' <expr>* '}' ;                  \
-      expr    : <number>  | <symbol> | <string>    \
-              | <comment> | <sexpr>  | <qexpr>;    \
-      lispy   : /^/ <expr>* /$/ ;                  \
+    "                                                \
+      number  : /-?[0-9]+/ ;                         \
+      symbol  : /[a-zA-Z0-9_+\\-*\\/\\\\%^=<>!&]+/ ; \
+      string  : /\"(\\\\.|[^\"])*\"/ ;               \
+      comment : /;[^\\r\\n]*/ ;                      \
+      sexpr   : '(' <expr>* ')' ;                    \
+      qexpr   : '{' <expr>* '}' ;                    \
+      expr    : <number>  | <symbol> | <string>      \
+              | <comment> | <sexpr>  | <qexpr>;      \
+      lispy   : /^/ <expr>* /$/ ;                    \
     ",
     Number, Symbol, String, Comment, Sexpr, Qexpr, Expr, Lispy);
 
