@@ -503,6 +503,23 @@ lval* builtin_join(lenv* e, lval* a) {
   return x;
 }
 
+lval* builtin_cons(lenv* e, lval* a) {
+  LASSERT_NUM("cons", a, 2);
+  LASSERT_TYPE("cons", a, 1, LVAL_QEXPR);
+
+  lval *list = lval_pop(a, 1);
+  lval *val = lval_take(a, 0);
+
+  list->count++;
+  list->cell = realloc(list->cell, sizeof(lval *) * list->count);
+
+  memmove(&list->cell[1], &list->cell[0], sizeof(lval *) * (list->count - 1));
+
+  list->cell[0] = val;
+
+  return list;
+}
+
 long min(long x, long y) {
     if (x <= y) {
         return x;
@@ -765,6 +782,7 @@ void lenv_add_builtins(lenv* e) {
   lenv_add_builtin(e, "tail", builtin_tail);
   lenv_add_builtin(e, "eval", builtin_eval);
   lenv_add_builtin(e, "join", builtin_join);
+  lenv_add_builtin(e, "cons", builtin_cons);
 
   /* Mathematical Functions */
   lenv_add_builtin(e, "+", builtin_add);
