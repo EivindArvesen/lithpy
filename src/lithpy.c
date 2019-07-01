@@ -452,6 +452,25 @@ lval* builtin_lambda(lenv* e, lval* a) {
   return lval_lambda(formals, body);
 }
 
+lval* builtin_locals(lenv* e, lval* a) {
+  lval* locals = lval_qexpr();
+
+  for (int i = 0; i < e->count; ++i) {
+    lval* v = lval_qexpr();
+    lval_add(v, lval_sym(e->syms[i]));
+    lval_add(v, lval_copy(e->vals[i]));
+    lval_add(locals, v);
+  }
+
+  return locals;
+}
+
+lval* builtin_exit(lenv* e, lval* a) {
+  lval_del(a);
+  lenv_del(e);
+  exit(0);
+}
+
 lval* builtin_list(lenv* e, lval* a) {
   a->type = LVAL_QEXPR;
   return a;
@@ -798,6 +817,7 @@ void lenv_add_builtins(lenv* e) {
   lenv_add_builtin(e, "\\",  builtin_lambda);
   lenv_add_builtin(e, "def", builtin_def);
   lenv_add_builtin(e, "=",   builtin_put);
+  lenv_add_builtin(e, "locals", builtin_locals);
 
   /* List Functions */
   lenv_add_builtin(e, "list", builtin_list);
@@ -844,6 +864,9 @@ void lenv_add_builtins(lenv* e) {
   lenv_add_builtin(e, "load",  builtin_load);
   lenv_add_builtin(e, "error", builtin_error);
   lenv_add_builtin(e, "print", builtin_print);
+
+  /* Other Functions */
+  lenv_add_builtin(e, "exit", builtin_exit);
 }
 
 /* File loading */
