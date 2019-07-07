@@ -684,6 +684,22 @@ lval* builtin_var(lenv* e, lval* a, char* func) {
 lval* builtin_def(lenv* e, lval* a) { return builtin_var(e, a, "def"); }
 lval* builtin_put(lenv* e, lval* a) { return builtin_var(e, a, "="); }
 
+lval* builtin_fun(lenv* e, lval* a) {
+  LASSERT_NUM("fun", a, 2);
+  LASSERT_TYPE("fun", a, 0, LVAL_QEXPR);
+  LASSERT_TYPE("fun", a, 1, LVAL_QEXPR);
+  LASSERT_NOT_EMPTY("fun", a, 0);
+
+  lval* name = lval_pop(a->cell[0], 0);
+  lval* args = lval_copy(a->cell[0]);
+  lval* body = lval_copy(a->cell[1]);
+
+  lenv_def(e, name, lval_lambda(args, body));
+
+  lval_del(a);
+  return lval_sexpr();
+}
+
 lval* builtin_ord(lenv* e, lval* a, char* op) {
   LASSERT_NUM(op, a, 2);
   LASSERT_TYPE(op, a, 0, LVAL_NUM);
@@ -817,6 +833,7 @@ void lenv_add_builtins(lenv* e) {
   lenv_add_builtin(e, "\\",  builtin_lambda);
   lenv_add_builtin(e, "def", builtin_def);
   lenv_add_builtin(e, "=",   builtin_put);
+  lenv_add_builtin(e, "fun", builtin_fun);
   lenv_add_builtin(e, "locals", builtin_locals);
 
   /* List Functions */
