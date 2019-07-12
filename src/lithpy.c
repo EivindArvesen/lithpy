@@ -751,6 +751,45 @@ lval* builtin_if(lenv* e, lval* a) {
   return x;
 }
 
+lval* builtin_or(lenv* e, lval* a) {
+  LASSERT_NUM("||", a, 2);
+  LASSERT_TYPE("||", a, 0, LVAL_NUM);
+  LASSERT_TYPE("||", a, 1, LVAL_NUM);
+
+  lval* x = lval_pop(a, 0);
+  lval* y = lval_pop(a, 0);
+
+  x->num = (x->num || y->num);
+  lval_del(y);
+  lval_del(a);
+  return x;
+}
+
+lval* builtin_and(lenv* e, lval* a) {
+  LASSERT_NUM("&&", a, 2);
+  LASSERT_TYPE("&&", a, 0, LVAL_NUM);
+  LASSERT_TYPE("&&", a, 1, LVAL_NUM);
+
+  lval* x = lval_pop(a, 0);
+  lval* y = lval_pop(a, 0);
+
+  x->num = (x->num && y->num);
+  lval_del(y);
+  lval_del(a);
+  return x;
+}
+
+lval* builtin_not (lenv* e, lval* a) {
+  LASSERT_NUM("!", a, 1);
+  LASSERT_TYPE("!", a, 0, LVAL_NUM);
+
+  lval* x = lval_pop(a, 0);
+  x->num = x->num != 0 ? 0 : 1;
+
+  lval_del(a);
+  return x;
+}
+
 lval* lval_read(mpc_ast_t* t);
 
 lval* builtin_load(lenv* e, lval* a) {
@@ -876,6 +915,10 @@ void lenv_add_builtins(lenv* e) {
   lenv_add_builtin(e, "<",  builtin_lt);
   lenv_add_builtin(e, ">=", builtin_ge);
   lenv_add_builtin(e, "<=", builtin_le);
+
+  lenv_add_builtin(e, "||", builtin_or);
+  lenv_add_builtin(e, "&&", builtin_and);
+  lenv_add_builtin(e, "!", builtin_not);
 
   /* String Functions */
   lenv_add_builtin(e, "load",  builtin_load);
