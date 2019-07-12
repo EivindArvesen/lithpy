@@ -5,3 +5,6 @@ src/mpc.h
 # Object-files, binaries, etc.
 *.o
 lithpy
+
+# Notes
+TODO.diff
