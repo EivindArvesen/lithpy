@@ -1156,6 +1156,7 @@ int main(int argc, char** argv) {
 
   // Load standard library
   lenv_load_file(e, "src/stdlib/prelude.lspy");
+  lenv_load_file(e, "src/stdlib/fun.lthpy");
 
   /* Interactive Prompt */
   if (argc == 1) {
